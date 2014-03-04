@@ -91,12 +91,9 @@ class GenericSprite extends fabric.Image
             @stateRecording = false
             this.showNormal()
         else if choice == 'clone'
-            r = new OverlapInteraction(@ruleTempObject)
-            r.addClone()
-            this.addIRule(r, @ruleTempObject.spriteType)
-            @stateTranspose = false
-            @stateRecording = false
-            this.showNormal()
+            myself = this
+            cloneWidgetShow(this, (x,y,t,q)-> myself.setCloneProperties(x,y,t,q))
+            return
         else if choice == 'delete'
             r = new OverlapInteraction(@ruleTempObject)
             r.addDelete()
@@ -104,6 +101,21 @@ class GenericSprite extends fabric.Image
             @stateRecording = false
             @stateTranspose = false
             this.showNormal()
+
+    # Used for the callback because clone has to wait for UI input AFTER the
+    # user clicks "clone" on the menu. Once the user clicks away after
+    # adjusting the clone, we'll get this call.
+    setCloneProperties: (x,y,t,q) ->
+        r = new OverlapInteraction(@ruleTempObject)
+        r.addClone()
+        r.action.translate.top = y
+        r.action.translate.left = x
+        r.action.translate.rotate = t
+        r.action.frequency = q
+        this.addIRule(r, @ruleTempObject.spriteType)
+        @stateTranspose = false
+        @stateRecording = false
+        this.showNormal()
 
     # Rule execution
     applyRules: (environment) ->
@@ -164,6 +176,15 @@ class GenericSprite extends fabric.Image
     addSimpleClone: ->
         r = new Rule()
         r.setActionType('clone')
+        this.setRule(1, r)
+
+    addClone: (y,x,t,q) ->
+        r = new Rule()
+        r.setActionType('clone')
+        r.action.translate.top = y
+        r.action.translate.left = x
+        r.action.translate.rotate = t
+        r.action.frequency = q
         this.setRule(1, r)
 
     removeClone: ->
@@ -299,6 +320,8 @@ class GenericSprite extends fabric.Image
         @stateRandom = json['stateRandom']
         @randomRange = json['randomRange']
         @spriteType = json['spriteType']
+        @prepObj        = {}
+        @prePrepObj     = {}
         this.setCoords()
 #end of GenericSprite
 
@@ -337,10 +360,6 @@ SpriteFactory = (spriteType, imageObj) ->
         # Count history
         _history: []
 
-        # If we're creating a clone, where do we put it
-        cloneTranslate: {top: 0, left: 0, rotate: 0}
-        cloneFrequency: 100
-        
         # N.B. If you are adding new attributes that should be saved, 
         # see window.saveSprites for storing those attributes.
 
@@ -385,15 +404,6 @@ SpriteFactory = (spriteType, imageObj) ->
             if idx == undefined
                 idx = 0
             Sprite::_irules[idx] = rule
-
-        setCloneOffset: (topVal, leftVal, rotate) ->
-            Sprite::cloneTranslate.top = topVal
-            Sprite::cloneTranslate.left = leftVal
-            Sprite::cloneTranslate.rotate = rotate
-
-        # Out of 100, so 1 out of 2 would be 50
-        setCloneFrequency: (freq) ->
-            Sprite::cloneFrequency = freq
 
         # toJSON see window.saveSprites
 
@@ -575,34 +585,43 @@ class DeleteAction extends Action
 
 class CloneAction extends Action
     constructor: ->
+        @translate = {top: 0, left: 0, rotate: 0}
+        @frequency = 100
 
     act: (sprite) ->
         # Interact at sprite.CloneFrequency % of the time
-        if (Math.random() * 100) > (sprite.cloneFrequency)
+        if (Math.random() * 100) > (@frequency)
             return
         if window.spriteTypeList[sprite.spriteType]::_count >= window.maxSprites
             return
         newSprite = new window.spriteTypeList[sprite.spriteType]  # make one
         spriteList.push( newSprite )
-        #newSprite.setTop(sprite.getTop() + Math.random() * 20 - 10)
-        #newSprite.setLeft(sprite.getLeft() + Math.random() * 20 - 10)
         theta = sprite.getAngle() * Math.PI / 180
-        sTop = sprite.cloneTranslate.top
-        sLeft = sprite.cloneTranslate.left
+        sTop = @translate.top
+        sLeft = @translate.left
+        sAngle = @translate.rotate
         dx = sLeft * Math.cos(theta) - sTop * Math.sin(theta)
         dy = sLeft * Math.sin(theta) + sTop * Math.cos(theta)
+        t = sprite.getTop()
+        l = sprite.getLeft()
+        a = sprite.getAngle()
         newSprite.setTop(sprite.getTop() + dy)
         newSprite.setLeft(sprite.getLeft() + dx)
-        newSprite.setAngle(sprite.getAngle() + sprite.cloneTranslate.rotate)
+        newSprite.setAngle(sprite.getAngle() + sAngle)
         canvas.add(newSprite)
+        newSprite.setCoords()
         canvas.renderAll()
 
     toJSON: ->
         object = {}
         object.type = 'clone'
+        object.translate = @translate
+        object.frequency = @frequency
         return object
 
     restoreFromJSON: (data) ->
+        @translate = data.translate
+        @frequency = data.frequency
         super()
 
 class TransformAction extends Action
@@ -735,8 +754,6 @@ window.saveSprites = ->
         oneType.imageObj = type::imageObj.src
         oneType.count = type::_count
         oneType.rules = []
-        oneType.cloneTranslate = type::cloneTranslate
-        oneType.cloneFrequency = type::cloneFrequency
         for rule in type::_rules
             if rule == undefined
                 continue

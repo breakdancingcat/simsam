@@ -91,7 +91,7 @@
     };
 
     GenericSprite.prototype.interactionCallback = function(choice) {
-      var r;
+      var myself, r;
       console.log('Received interaction callback ' + choice);
       if (choice === 'transpose') {
         this.stateTranspose = true;
@@ -102,12 +102,10 @@
         this.stateRecording = false;
         return this.showNormal();
       } else if (choice === 'clone') {
-        r = new OverlapInteraction(this.ruleTempObject);
-        r.addClone();
-        this.addIRule(r, this.ruleTempObject.spriteType);
-        this.stateTranspose = false;
-        this.stateRecording = false;
-        return this.showNormal();
+        myself = this;
+        cloneWidgetShow(this, function(x, y, t, q) {
+          return myself.setCloneProperties(x, y, t, q);
+        });
       } else if (choice === 'delete') {
         r = new OverlapInteraction(this.ruleTempObject);
         r.addDelete();
@@ -116,6 +114,20 @@
         this.stateTranspose = false;
         return this.showNormal();
       }
+    };
+
+    GenericSprite.prototype.setCloneProperties = function(x, y, t, q) {
+      var r;
+      r = new OverlapInteraction(this.ruleTempObject);
+      r.addClone();
+      r.action.translate.top = y;
+      r.action.translate.left = x;
+      r.action.translate.rotate = t;
+      r.action.frequency = q;
+      this.addIRule(r, this.ruleTempObject.spriteType);
+      this.stateTranspose = false;
+      this.stateRecording = false;
+      return this.showNormal();
     };
 
     GenericSprite.prototype.applyRules = function(environment) {
@@ -196,6 +208,17 @@
       var r;
       r = new Rule();
       r.setActionType('clone');
+      return this.setRule(1, r);
+    };
+
+    GenericSprite.prototype.addClone = function(y, x, t, q) {
+      var r;
+      r = new Rule();
+      r.setActionType('clone');
+      r.action.translate.top = y;
+      r.action.translate.left = x;
+      r.action.translate.rotate = t;
+      r.action.frequency = q;
       return this.setRule(1, r);
     };
 
@@ -356,6 +379,8 @@
       this.stateRandom = json['stateRandom'];
       this.randomRange = json['randomRange'];
       this.spriteType = json['spriteType'];
+      this.prepObj = {};
+      this.prePrepObj = {};
       return this.setCoords();
     };
 
@@ -385,14 +410,6 @@
       Sprite.prototype._count = 0;
 
       Sprite.prototype._history = [];
-
-      Sprite.prototype.cloneTranslate = {
-        top: 0,
-        left: 0,
-        rotate: 0
-      };
-
-      Sprite.prototype.cloneFrequency = 100;
 
       function Sprite(spriteType) {
         var chash, hash;
@@ -444,16 +461,6 @@
           idx = 0;
         }
         return Sprite.prototype._irules[idx] = rule;
-      };
-
-      Sprite.prototype.setCloneOffset = function(topVal, leftVal, rotate) {
-        Sprite.prototype.cloneTranslate.top = topVal;
-        Sprite.prototype.cloneTranslate.left = leftVal;
-        return Sprite.prototype.cloneTranslate.rotate = rotate;
-      };
-
-      Sprite.prototype.setCloneFrequency = function(freq) {
-        return Sprite.prototype.cloneFrequency = freq;
       };
 
       return Sprite;
@@ -713,11 +720,18 @@
 
     __extends(CloneAction, _super);
 
-    function CloneAction() {}
+    function CloneAction() {
+      this.translate = {
+        top: 0,
+        left: 0,
+        rotate: 0
+      };
+      this.frequency = 100;
+    }
 
     CloneAction.prototype.act = function(sprite) {
-      var dx, dy, newSprite, sLeft, sTop, theta;
-      if ((Math.random() * 100) > sprite.cloneFrequency) {
+      var a, dx, dy, l, newSprite, sAngle, sLeft, sTop, t, theta;
+      if ((Math.random() * 100) > this.frequency) {
         return;
       }
       if (window.spriteTypeList[sprite.spriteType].prototype._count >= window.maxSprites) {
@@ -726,14 +740,21 @@
       newSprite = new window.spriteTypeList[sprite.spriteType];
       spriteList.push(newSprite);
       theta = sprite.getAngle() * Math.PI / 180;
-      sTop = sprite.cloneTranslate.top;
-      sLeft = sprite.cloneTranslate.left;
+      sTop = this.translate.top;
+      sLeft = this.translate.left;
+      sAngle = this.translate.rotate;
       dx = sLeft * Math.cos(theta) - sTop * Math.sin(theta);
       dy = sLeft * Math.sin(theta) + sTop * Math.cos(theta);
+      t = sprite.getTop();
+      l = sprite.getLeft();
+      a = sprite.getAngle();
+      console.log("t: " + t + " l: " + l + " a: " + a);
+      console.log("dx: " + dx + " dy: " + dy);
       newSprite.setTop(sprite.getTop() + dy);
       newSprite.setLeft(sprite.getLeft() + dx);
-      newSprite.setAngle(sprite.getAngle() + sprite.cloneTranslate.rotate);
+      newSprite.setAngle(sprite.getAngle() + sAngle);
       canvas.add(newSprite);
+      newSprite.setCoords();
       return canvas.renderAll();
     };
 
@@ -741,10 +762,14 @@
       var object;
       object = {};
       object.type = 'clone';
+      object.translate = this.translate;
+      object.frequency = this.frequency;
       return object;
     };
 
     CloneAction.prototype.restoreFromJSON = function(data) {
+      this.translate = data.translate;
+      this.frequency = data.frequency;
       return CloneAction.__super__.restoreFromJSON.call(this);
     };
 
@@ -914,8 +939,6 @@
       oneType.imageObj = type.prototype.imageObj.src;
       oneType.count = type.prototype._count;
       oneType.rules = [];
-      oneType.cloneTranslate = type.prototype.cloneTranslate;
-      oneType.cloneFrequency = type.prototype.cloneFrequency;
       _ref = type.prototype._rules;
       for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
         rule = _ref[_j];

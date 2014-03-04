@@ -4,6 +4,7 @@ window.initSim = (function(){
     currentTracker = null;          // operating measure object
     currentSimObject = null;
     cloneObj = null;
+    cloneWidgetCB = null;           // Callback after closing clone ghost
 
     /* Create a new fabric.Canvas object that wraps around the original <canvas>
      * DOM element.
@@ -370,7 +371,8 @@ setCloneUILocation = function (clone) {
     });
 }
 
-cloneWidgetShow = function(obj) {
+// Show the clone ghost and setup variables for keeping status.
+cloneWidgetShow = function(obj, hideCB) {
     var x = obj.getLeft();
     var y = obj.getTop();
 
@@ -379,6 +381,8 @@ cloneWidgetShow = function(obj) {
     var yo = -45;
     var startX = x + xo * Math.cos(theta) - yo * Math.sin(theta);
     var startY = y + xo * Math.sin(theta) + yo * Math.cos(theta);
+
+    cloneWidgetCB = hideCB;
 
     var imgElement = document.createElement('img');
     imgElement.src = obj.getSrc();
@@ -408,6 +412,7 @@ cloneWidgetShow = function(obj) {
     $('#clone-ui').show();
 }
 
+// Called when the user clicks away from the clone ghost
 cloneWidgetHide = function(obj) {
     $('#clone-ui').hide();
     if (cloneObj != null) {
@@ -424,10 +429,9 @@ cloneWidgetHide = function(obj) {
         var topDiff = -dx * Math.sin(theta) + dy * Math.cos(theta);
         var leftDiff = dx * Math.cos(-theta) - dy * Math.sin(-theta);
 
-        var tx = cloneObj.getAngle() - daddy.getAngle();
+        var tDiff = cloneObj.getAngle() - daddy.getAngle();
 
-        daddy.setCloneOffset(topDiff, leftDiff, tx);
-        daddy.setCloneFrequency(freq);
+        cloneWidgetCB(topDiff, leftDiff, tDiff, freq);
         cloneObj.remove();
         cloneObj = null;
         canvas.setActiveObject(daddy);
@@ -614,9 +618,10 @@ $(document).ready(function() {
             obj.removeClone();
             $(this).removeClass('highlight');
         } else {
-            obj.addSimpleClone();
             $(this).addClass('highlight');
-            cloneWidgetShow(obj);
+            cloneWidgetShow(obj, function (topDiff, leftDiff, tDiff, freq) {
+                cloneObj.daddy.addClone(topDiff, leftDiff, tDiff, freq);
+            });
         }
     });
 
