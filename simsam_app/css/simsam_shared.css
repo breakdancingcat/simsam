@@ -166,14 +166,14 @@
         margin: 2px 1px 2px 1px;
     }
     
-    #trash {
+    .trash {
         position: absolute;
     	font-family: 'PeaxDrawnIcons';
     	/*text-align: center;*/
         /*background: url('../images/trash.png') no-repeat center;*/
     }
     
-    #trash .sortable-placeholder {
+    .trash .sortable-placeholder {
         border-color: #62c004;
         border-width: 1px;
         border-style: dashed;
@@ -181,6 +181,22 @@
         position: absolute;
         border-radius: 0px 15px 15px 0px;
     }
+    /*
+    #trashsprite {
+        position: absolute;
+    	font-family: 'PeaxDrawnIcons';
+    	/*text-align: center;*/
+        /*background: url('../images/trash.png') no-repeat center;*/
+    /*}
+    
+    #trashsprite .sortable-placeholder {
+        border-color: #62c004;
+        border-width: 1px;
+        border-style: dashed;
+        background-color: rgba(0, 0, 0, 0.3);
+        position: absolute;
+        border-radius: 0px 15px 15px 0px;
+    }*/
 
 /**********************/
 /***** RIGHT MENU *****/

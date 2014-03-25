@@ -172,7 +172,7 @@
         if (this.prepObj[key]) {
           this.prePrepObj[key] = this.prepObj[key];
         }
-        this.prepObj[key] = null;
+        //this.prepObj[key] = null; mhwj - this isn't needed since we are auto-saving at every manip
       }
       return this.historyTick();
     };

@@ -115,11 +115,7 @@
             		  <div id="uimod_clone" class="menu_button">Clone</div>
             	  </div>
                 </div>
-                <div id="sprite_drawer">
-              	 <div id="trash_menu_button" class="floating_button"> 
-              	 trash sprite class 
-              	 </div>
-                </div>
+                <div id="sprite_drawer"></div>
             	
             </div>
             
@@ -131,7 +127,7 @@
             			<div id="record_mode" class="small"><img class="icon" src="static/images/newicons/camera.png"></div>
             		</div>
             		<div id="video_output"><!-- filmstrip--></div>
-            		<div id="trash"><img class="icon" src="static/images/newicons/trash.png"></div>
+            		<div class="trash" id="trash"><img class="icon" src="static/images/newicons/trash.png"></div>
             	</div> <!-- video_bottom -->
             	<div class="sim_bottom">
             		<div class="sim_buttons">
@@ -147,6 +143,7 @@
             			<div id="count_chart"></div>
             			<p style="clear: both;">Charts</p>
             		</div>
+            		<div class="trash" id="trash_menu_button"><img class="icon" src="static/images/newicons/trash.png"></div>
             	</div>
             	<!--<a href="" id="sim_min" class="close" style="display: none;">_</a>-->
             </div>
@@ -196,7 +193,7 @@
     <!--<input type="text" id="playback_index">-->
     <input type="hidden" id="fps" value="10">
     
-    <div id="data"></div>
+    <!--<div id="data"></div>-->
         
     {% endif %}
     </body>

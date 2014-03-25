@@ -48,7 +48,7 @@
     width: 94px;
 }
 
-#trash {
+.trash {
     top: 495px; 
     right: 248px;
     height: 75px;
@@ -56,7 +56,7 @@
     width: 65px;
 }
 
-#trash .sortable-placeholder {
+.trash .sortable-placeholder {
     height: 73px;
     width: 64px;
     top: 1px;
