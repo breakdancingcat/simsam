@@ -221,6 +221,8 @@ $ ->
         canvas.width  = w
         canvas.height = h
         ctx = canvas.getContext '2d'
+        ctx.translate(w, 0); # flip image horizontally
+        ctx.scale(-1, 1); # flip image horizontally
         ctx.drawImage video, 0, 0, w, h
         return canvas
     

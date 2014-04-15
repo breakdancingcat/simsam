@@ -188,6 +188,8 @@
       canvas.width = w;
       canvas.height = h;
       ctx = canvas.getContext('2d');
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, w, h);
       return canvas;
     };

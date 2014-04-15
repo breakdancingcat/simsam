@@ -64,6 +64,8 @@
     	left: 0;
     	/*-o-object-fit: fill;*/
     	border-radius: 15px;
+        -webkit-transform: scaleX(-1);
+        transform: scaleX(-1);
     }
     
     .playback-frame {
