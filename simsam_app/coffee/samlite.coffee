@@ -18,9 +18,8 @@ $ ->
     cameraState = 1
     anyCamera = true
     
-    # sprite collection wasn't initialized for a new animation and were
-    # creating an error when they were first used
-    # Amanda: is this the right way to do this?
+    # if it's a brand new animation, we need to initialize this
+    # otherwise it's populated onload in sam.html
     window.spritecollection = []
     
     
