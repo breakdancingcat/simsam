@@ -43,6 +43,7 @@ window.initSim = (function(){
                     randomSliderShow(selectedObject);
                 }
                 if (selectedObject.isClone()) {
+                    console.log('Highlight Clone');
                     $('#uimod_clone').addClass('highlight');
                 }
             } else {
@@ -365,6 +366,7 @@ randomSliderHide = function(obj) {
 // Cloning functions
 //
 setCloneUILocation = function (clone) {
+    console.log('setCloneUILocation');
     var cui = $('#clone-ui');
     var myWidth = $(cui).width();
     var myHeight = $(cui).outerHeight();
@@ -376,6 +378,7 @@ setCloneUILocation = function (clone) {
 }
 
 cloneWidgetShow = function(obj) {
+    console.log('cloneWidgetShow')
     var x = obj.getLeft();
     var y = obj.getTop();
 
@@ -414,6 +417,7 @@ cloneWidgetShow = function(obj) {
 }
 
 cloneWidgetHide = function(obj) {
+    console.log('cloneWidgetHide');
     $('#clone-ui').hide();
     if (cloneObj != null) {
         var nowTop = cloneObj.getTop();
@@ -440,6 +444,7 @@ cloneWidgetHide = function(obj) {
 }
 
 cloneWidgetAdd = function(amt) {
+    console.log('cloneWidgetAdd');
     var ourDiv = $('#clone-data');
     var value = $(ourDiv).data('value');
     value += amt;
@@ -614,6 +619,7 @@ $(document).ready(function() {
     });
 
     $('#uimod_clone').click(function() {
+        console.log('Onclick');
         obj = canvas.getActiveObject();
         if (!obj.isEditing) return;
         if (obj.isClone()) {

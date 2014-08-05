@@ -220,16 +220,19 @@
 
     GenericSprite.prototype.addSimpleClone = function() {
       var r;
+      console.log('Adding Simple Clone');
       r = new Rule();
       r.setActionType('clone');
       return this.setRule(1, r);
     };
 
     GenericSprite.prototype.removeClone = function() {
+      console.log('Removing Clone');
       return delete this._rules[1];
     };
 
     GenericSprite.prototype.isClone = function() {
+      console.log('Checks if is Clone');
       if (this._rules[1] !== void 0) {
         return true;
       }
@@ -553,6 +556,7 @@
     };
 
     Rule.prototype.addClone = function() {
+      console.log('Adding Clone');
       this.type = 'clone';
       return this.action = new CloneAction();
     };
@@ -763,6 +767,7 @@
 
     CloneAction.prototype.act = function(sprite) {
       var dx, dy, newSprite, sLeft, sTop, theta;
+      console.log('Clone Act!');
       if ((Math.random() * 100) > sprite.cloneFrequency) {
         return;
       }

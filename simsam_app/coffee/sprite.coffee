@@ -187,14 +187,17 @@ class GenericSprite extends fabric.Image
 
     # This could go in simlite.js, but wanted to keep it with learningToggle
     addSimpleClone: ->
+        console.log('Adding Simple Clone')
         r = new Rule()
         r.setActionType('clone')
         this.setRule(1, r)
 
     removeClone: ->
+        console.log('Removing Clone')
         delete this._rules[1]
 
     isClone: ->
+        console.log('Checks if is Clone')
         if @_rules[1] != undefined
             return true
         return false
@@ -481,6 +484,7 @@ class Rule
         @action.stateRandom = true
 
     addClone: ->
+        console.log('Adding Clone');
         @type = 'clone'
         @action = new CloneAction()
 
@@ -623,6 +627,7 @@ class CloneAction extends Action
     constructor: ->
 
     act: (sprite) ->
+        console.log('Clone Act!')
         # Interact at sprite.CloneFrequency % of the time
         if (Math.random() * 100) > (sprite.cloneFrequency)
             return
