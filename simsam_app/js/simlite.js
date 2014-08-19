@@ -3,6 +3,7 @@ window.initSim = (function(){
     interactionWaiting = false;     // in state of having just dropped measure
     currentTracker = null;          // operating measure object
     currentSimObject = null;
+    cloneObj = null;
 
     /* Create a new fabric.Canvas object that wraps around the original <canvas>
      * DOM element.
@@ -28,6 +29,9 @@ window.initSim = (function(){
         selectedObject = canvas.getActiveObject();
         // if one object is selected this fires
         if (selectedObject !== null && selectedObject !== undefined) { 
+            if (! (typeof selectedObject['learningToggle'] === 'function')) {
+                return;
+            }
             selectedObject.learningToggle();
             if (selectedObject.stateRecording) {
                 selectedObject.bringToFront();
@@ -35,6 +39,12 @@ window.initSim = (function(){
                 if (selectedObject.isRandom()) {
                     $('#uimod_rand').addClass('highlight');
                     randomSliderShow(selectedObject);
+                }
+                if (selectedObject.isClone()) {
+                    $('#uimod_clone').addClass('highlight');
+                }
+                if (selectedObject.isRandom()){
+                    $('#uimod_sprout').addClass('highlight');
                 }
             } else {
                 modifyingHide(selectedObject);
@@ -117,11 +127,14 @@ getD = function(init , end) {
 }
 
 simObjectSelected = function(options) {
+    if (cloneObj != null && canvas.getActiveObject() != cloneObj) {
+        cloneWidgetHide();
+        return;
+    }
     // We're waiting for a select to occur on a measurement
     if (interactionWaiting) {
         currentTracker.targetSprite = canvas.getActiveObject();
-        canvas.discardActiveObject();
-        interactionWaiting = false;
+        canvas.discardActiveObject(); interactionWaiting = false;
         $('#count_blocker').hide();
         return;
     }
@@ -131,27 +144,16 @@ simObjectSelected = function(options) {
 }
 
 simObjectCleared = function(options) {
+    if (cloneObj != null) {
+        cloneWidgetHide();
+        return;
+    }
     $('#selected').hide(250);
     if (currentSimObject !== undefined) {
         modifyingHide(currentSimObject);
     }
     currentSimObject = null;
     save(); // when I have moved or programmed an object, auto-save it
-}
-
-
-//
-// django functions
-//
-djangoDeleteImage = function(image_hash) {
-    $.ajax({
-        url: 'delete_image',
-        type: 'POST',
-        data: {
-            image_hash: image_hash
-        },
-        dataType: 'json'
-    });
 }
 
 // Called every time a sim object has finished moving so we can see if it
@@ -173,9 +175,14 @@ simObjectModified = function(options) {
         // If we're in recording mode and we are dropped on another object,
         //   then begin the creation of an interaction rule.
         canvas.forEachObject(function(obj) {
-            if (obj === target) return;
+            if (obj === target){
+               console.log('obj === target. Line 155 simlite.js');  
+                return;
+            }
             if (obj.trueIntersectsWithObject(target)) {
+                console.log('obj intersected.  Line 159 simlite.js');
                 if (typeof(target.interactionEvent) != "undefined") {
+                    console.log('interactionEvent not undefined.  Line 161 simlite.js');
                     // XXX Now add a UI and add the interactionEvent after
                     // the user selects which type of action to take
                     target.interactionEvent(obj);
@@ -184,6 +191,21 @@ simObjectModified = function(options) {
         });
     }
 }
+
+//
+// django functions
+//
+djangoDeleteImage = function(image_hash) {
+    $.ajax({
+        url: 'delete_image',
+        type: 'POST',
+        data: {
+            image_hash: image_hash
+        },
+        dataType: 'json'
+    });
+}
+
 
 //
 // User Interface for Modifying Objects
@@ -214,7 +236,7 @@ deleteImageInternal = function(messageInfo, onSuccess) {
 // Remove only the individual object
 deleteImageSingle = function(obj) {
     messageInfo = {
-        message: 'This item will be permanantly deleted.  Are you sure?',
+        message: 'This item will be permanently deleted.  Are you sure?',
         title: 'Delete this object?',
         button: 'Delete',
     };
@@ -229,7 +251,7 @@ deleteImageSingle = function(obj) {
 deleteImageClass = function(spriteType, classImage) {
 
     messageInfo = {
-        message: 'All items of this type will be permanantly deleted.  Are you sure?',
+        message: 'All items of this type will be permanently deleted.  Are you sure?',
         title: 'Delete all objects of this type?',
         button: 'Delete All',
     };
@@ -280,9 +302,10 @@ randomDrawArc = function(ang) {
     height = $(rarc).attr('height');
     ctx = $(rarc)[0].getContext('2d');
     ctx.clearRect(0,0, width, height);
+    ctx.fillStyle = '#62c004';
 
     //pct = 80;
-    lineWidth = 4;
+    lineWidth = 0;
     pm = (ang/180.1) * Math.PI; // extra .1 keeps arc a circle at 100%
     max = (Math.PI*1.5) + pm;
     max = max % (Math.PI*2);
@@ -290,7 +313,7 @@ randomDrawArc = function(ang) {
     radius = Math.max(width/2, height/2) - lineWidth / 2;
     ctx.moveTo(width/2, height/2);
     ctx.beginPath();
-    ctx.strokeStyle = 'black';
+    ctx.strokeStyle = '#62c004';
     ctx.lineWidth = lineWidth;
     ctx.arc(width/2, height/2, radius, min, max, false);
     ctx.lineTo(width/2, height/2);
@@ -327,7 +350,6 @@ randomSliderPosition = function(obj) {
     arcObj.css({left: arcLeft, top: arcTop});
     $('#random-arc').attr('width', arcWidth);
     $('#random-arc').attr('height', arcHeight);
-
     randomDrawArc(obj.randomRange);
 }
 
@@ -340,6 +362,7 @@ randomSliderRelease = function(obj) {
     }
 }
 
+// Display the widget for setting random breadth
 randomSliderShow = function(obj) {
     randomSliderPosition(obj);
     $('#random-range').show();
@@ -362,6 +385,97 @@ randomSliderHide = function(obj) {
     randomSliderRelease(obj);
 }
 
+//
+// Cloning functions
+//
+setCloneUILocation = function (clone) {
+    console.log("setCloneUILocation");
+    var cui = $('#clone-ui');
+    var myWidth = $(cui).width();
+    var myHeight = $(cui).outerHeight();
+    var objHeight = clone.getHeight();
+    $(cui).css({ 
+        top: clone.getTop() - objHeight/2 - myHeight - 15,
+        left: clone.getLeft() - myWidth/2,
+    });
+}
+
+cloneWidgetShow = function(obj) {
+    console.log("cloneWidgetShow");
+    var x = obj.getLeft();
+    var y = obj.getTop();
+
+    var theta = obj.getAngle() * Math.PI / 180;
+    var xo = 45;
+    var yo = -45;
+    var startX = x + xo * Math.cos(theta) - yo * Math.sin(theta);
+    var startY = y + xo * Math.sin(theta) + yo * Math.cos(theta);
+
+    var imgElement = document.createElement('img');
+    imgElement.src = obj.getSrc();
+    cloneObj = new fabric.Image(imgElement, {
+        lockRotation: false,
+        lockScalingX: true,
+        lockScalingY: true,
+        opacity: 0.7,
+        top: startY,
+        left: startX,
+        cornerSize: 20,
+        angle: obj.getAngle(),
+    });
+    cloneObj.myOriginalTop = startY;
+    cloneObj.myOriginalLeft = startX;
+    cloneObj.modified = function() {
+        setCloneUILocation(this);
+    }
+    cloneObj.daddy = obj;
+    canvas.add(cloneObj);
+    cloneObj.bringToFront();
+    canvas.setActiveObject(cloneObj);
+
+    setCloneUILocation(cloneObj);
+    $('#clone-data').data('value', 100);
+    $('#clone-data').html('100%');
+    $('#clone-ui').show();
+}
+
+cloneWidgetHide = function(obj) {
+    $('#clone-ui').hide();
+    if (cloneObj != null) {
+        var nowTop = cloneObj.getTop();
+        var nowLeft = cloneObj.getLeft();
+        var origTop = cloneObj.myOriginalTop;
+        var origLeft = cloneObj.myOriginalLeft;
+        var daddy = cloneObj.daddy;
+
+        var dx = nowLeft - origLeft;
+        var dy = nowTop - origTop;
+        var freq = $('#clone-data').data('value');
+        var theta = daddy.getAngle() * Math.PI / 180;
+        var topDiff = -dx * Math.sin(theta) + dy * Math.cos(theta);
+        var leftDiff = dx * Math.cos(-theta) - dy * Math.sin(-theta);
+
+        var tx = cloneObj.getAngle() - daddy.getAngle();
+
+        daddy.setCloneOffset(topDiff, leftDiff, tx);
+        daddy.setCloneFrequency(freq);
+        cloneObj.remove();
+        cloneObj = null;
+        canvas.setActiveObject(daddy);
+    }
+}
+
+cloneWidgetAdd = function(amt) {
+    var ourDiv = $('#clone-data');
+    var value = $(ourDiv).data('value');
+    value += amt;
+    if (value < 10) value = 10;
+    if (value > 100) value = 100;
+    $(ourDiv).data('value', value);
+    $(ourDiv).html('' + value + '%');
+}
+
+// Hide the sidebar menu for when an object is in "modifying" state
 modifyingHide = function(p_obj) {
     var obj = p_obj;
     if (obj == null) {
@@ -369,6 +483,7 @@ modifyingHide = function(p_obj) {
     }
     $('#modifying').hide(250);
     $('#uimod_rand').removeClass('highlight');
+    $('#uimod_clone').removeClass('highlight');
     randomSliderHide(obj);
     // Clear recording if we're in the middle of it.
     if (obj && obj.stateRecording) {
@@ -505,7 +620,9 @@ window.load = function() {
                     console.log ('Error(load): ' + data.debug);
                 }
                 if (data.message.length) {
-                    alert('Error: ' + data.message);
+                    //so far just because nothing is there
+                    // mute this for now since save and load is auto for a while
+                    //alert('Error: ' + data.message);
                 }
             }
         },
@@ -564,15 +681,45 @@ $(document).ready(function() {
     });
 
     $('#uimod_clone').click(function() {
+        console.log('Onclick');
         obj = canvas.getActiveObject();
-        if (!obj.isEditing) return;
+        console.log('Object click =' + obj);
+        if (!obj.isEditing) {
+            console.log('isEditing returns '+ obj.isEditing);
+            console.log('Object not being edited');
+            return;
+        }
         if (obj.isClone()) {
+            console.log('Object is clone');
             obj.removeClone();
             $(this).removeClass('highlight');
         } else {
+            console.log('Object is not clone, add simple clone');
             obj.addSimpleClone();
             $(this).addClass('highlight');
+            cloneWidgetShow(obj);
         }
+    });
+
+    $('#uimod_sprout').click(function() {
+        obj = canvas.getActiveObject();
+        if (!obj.isEditing) return;
+        if (obj.isSprout()) {
+            obj.removeSprout();
+            $(this).removeClass('highlight');
+        } else {
+            obj.addSprout();
+            $(this).addClass('highlight');
+            cloneWidgetShow(obj);
+        }
+    });
+
+    $('#clone-minus').click(function() {
+        cloneWidgetAdd(-10);
+    });
+
+    $('#clone-plus').click(function() {
+        cloneWidgetAdd(10);
     });
 
     $('#randomslider').slider({

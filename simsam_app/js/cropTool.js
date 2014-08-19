@@ -138,11 +138,11 @@ function getResults() {
     temp_ctx.drawImage( image, 
  			theSelection.x, 
     		        theSelection.y, 
-    			theSelection.w, 
-    			theSelection.h, 
+    			52, 
+    			52, 
     			0, 0, 
-    			theSelection.w, 
-    			theSelection.h); //draw the cropped image
+    			52, 
+    			52); //draw the cropped image
 
     var vData = temp_canvas.toDataURL();
     $('#crop_result').attr('src', vData); //display result

@@ -11,7 +11,7 @@
 }
 
 #camera {
-    width: 555;
+    width: 650;
 }
 
 #video_frame {
@@ -52,8 +52,8 @@
     top: 495px; 
     right: 248px;
     height: 75px;
-	font-size: 4.5em;
-    width: 60px;
+    font-size: 4.5em;
+    width: 65px;
 }
 
 #trash .sortable-placeholder {
@@ -64,15 +64,17 @@
 }
 
 #toggle {
-    width: 90px;
+    width: 100px;
 }
 
 #toggle .small {
-	font-size: 1.5em;
+	width: 26px;
+	height: 26px;
 }
 
 #toggle .big {
-	font-size: 4.5em;
+	width: 60px;
+	height: 60px;
 }
     
 /**********************/
